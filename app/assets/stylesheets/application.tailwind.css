@@ -11,3 +11,8 @@
 }
 
 */
+
+#checkboxes {
+  height: 88px;
+  overflow: auto;
+}

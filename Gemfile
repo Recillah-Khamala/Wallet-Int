@@ -74,3 +74,6 @@ end
 # Authentication
 gem "devise"
 gem "letter_opener_web"
+
+# cancan
+gem 'cancancan'

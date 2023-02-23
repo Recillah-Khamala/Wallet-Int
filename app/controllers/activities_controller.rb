@@ -1,9 +1,11 @@
 class ActivitiesController < ApplicationController
-  before_action :set_activity, only: %i[ show edit update destroy ]
+  before_action :authenticate_user!
+  before_action :set_trnsaction, only: %i[show edit update destroy]
+  before_action :set_categories_array, only: %i[edit update new create]
 
   # GET /activities or /activities.json
   def index
-    @activities = Activity.all
+    @activities = Activity.order(created_at: asc)
   end
 
   # GET /activities/1 or /activities/1.json
@@ -12,6 +14,7 @@ class ActivitiesController < ApplicationController
 
   # GET /activities/new
   def new
+    @categories = Category.where(author_id: current_user.id)
     @activity = Activity.new
   end
 
@@ -21,11 +24,19 @@ class ActivitiesController < ApplicationController
 
   # POST /activities or /activities.json
   def create
-    @activity = Activity.new(activity_params)
+    name = params['activity']['name']
+    amount = params['activity']['amount']
+    category_ids = params['activity']['categories']
+    
+    @activity = Activity.new(name: name, amount: amount)
+    @activity.user_id = current_user.id
 
     respond_to do |format|
       if @activity.save
-        format.html { redirect_to activity_url(@activity), notice: "Activity was successfully created." }
+        create_activity_category(category_ids, @activity)
+        format.html do
+          redirect_to category_url(category_ids[0]), notice: "Activity#{category_ids.length > 1 ? 's were' : was } successfully created." 
+        end
         format.json { render :show, status: :created, location: @activity }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -65,6 +76,16 @@ class ActivitiesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def activity_params
-      params.fetch(:activity, {})
+      params.require(:activity).permit(:name, :amount, :categories)
+    end
+
+    def set_categories_array
+      @category_array = Category.where(author_id: current_user.id)
+    end
+  
+    def create_activity_category(category_ids, transaction)
+      category_ids.each do |category_id|
+        ActivityCategory.create(category_id: category_id, activity_id: activity.id)
+      end
     end
 end
